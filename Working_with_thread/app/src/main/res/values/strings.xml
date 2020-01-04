@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">TutoringAssignment_1</string>
+
+    <!-- Button Texts-->
+    <string name="button_previous">Previous</string>
+    <string name="button_play">Play</string>
+    <string name="button_next">Next</string>
+    <string name="button_stop">Stop</string>
+
+</resources>
