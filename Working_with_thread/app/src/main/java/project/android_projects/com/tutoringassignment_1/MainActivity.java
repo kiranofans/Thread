@@ -1,18 +1,12 @@
 package project.android_projects.com.tutoringassignment_1;
 
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import project.android_projects.com.tutoringassignment_1.databinding.ActivityMainBindingImpl;
 
@@ -30,12 +24,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String stopStr;
     private String startStr;
 
-    private MyAsyncImageTask1 imgAsyncTask1;
-
-    private boolean isRunning = true;
-    private Thread thread;
-
-    private Runnable runnable;
+    private boolean isRunning = false;
+    //private Runnable runnable;
+    private MyThread myThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,27 +44,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void startOrStopImageLooping() {
-        //Start
-        imgAsyncTask1 = new MyAsyncImageTask1();
-        imgAsyncTask1.execute();
+        myThread = new MyThread();
+        isRunning = !isRunning;//if isRunning equals true
 
-        if (mBinding.btnPlay.getText().equals(startStr)) {
-
-            mBinding.btnPlay.setText(stopStr);
-            mBinding.btnPrevious.setEnabled(false);
-            mBinding.btnNext.setEnabled(false);
-            Log.d(TAG, "Async Started");
+        if (isRunning) {//isRunning is true
+            myThread.start();
+            mBinding.btnPlay.setText(getString(R.string.button_stop));
         } else {
-            handler.removeCallbacks(runnable);
+            myThread.interrupt();//Calling interrupt() to stop the Thread
 
-            mBinding.btnPlay.setText(startStr);
-            mBinding.btnPrevious.setEnabled(true);
-            mBinding.btnNext.setEnabled(true);
-            Log.d(TAG, "Async Stopped");
+            /*if(myThread.isInterrupted()){
+                Log.d(TAG,"Thread interrupted");
+            }*/
+            mBinding.btnPlay.setText(getString(R.string.button_play));
+
         }
+        mBinding.btnPrevious.setEnabled(!isRunning);
+        mBinding.btnNext.setEnabled(!isRunning);
 
     }
-
 
     @Override
     public void onClick(View v) {
@@ -83,7 +72,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn_play:
                 //run a thread to loop through the images after a delay of 2 secs
                 startOrStopImageLooping();
-
                 break;
 
             case R.id.btn_previous:
@@ -109,28 +97,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void showPreviousImage() {
-        mBinding.imgPlaceholder.setImageResource(imgIds[currentIndex]);
         currentIndex--;
-        if (currentIndex < 0) {
-            currentIndex =0;
-            showNextImage();
-            /*if(currentIndexNext == imgIds.length-1){
-
-            }*/
-        }else{
-            showPreviousImage();
+        if (currentIndex == -1) {
+            currentIndex = imgIds.length - 1;
         }
+
+        mBinding.imgPlaceholder.setImageResource(imgIds[currentIndex]);
         Log.d(TAG, currentIndex + " previous");
     }
 
     private void showNextImage() {
-        mBinding.imgPlaceholder.setImageResource(imgIds[currentIndex]);
         currentIndex++;//increase the currentIndexNext by 1
 
-        if (currentIndex > imgIds.length - 1) {
-            //If currentIndexNext exceed the last one, return to the first one
+        if (currentIndex > imgIds.length) {
+            //if currentIndexNext exceed the last one, return to the first one
             currentIndex = 0;
         }
+        mBinding.imgPlaceholder.setImageResource(imgIds[currentIndex]);
+
         Log.d(TAG, currentIndex + " next");
 
     }
@@ -139,25 +123,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void run() {
             //currentIndexNext = (currentIndexNext++) % imgIds.length;
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    showNextImage();
-
+            while (isRunning) {//isRunning is true
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            });
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        showNextImage();
 
+                    }
+                });
+            }
         }
 
     }
 
 
-    class MyAsyncImageTask1 extends AsyncTask<Void, Void, Void> {
+    /*class MyAsyncImageTask1 extends AsyncTask<Void, Void, Void> {
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future taskFuture;
@@ -192,5 +177,5 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             taskFuture.cancel(true);
             super.onPostExecute(aVoid);
         }
-    }
+    }*/
 }
